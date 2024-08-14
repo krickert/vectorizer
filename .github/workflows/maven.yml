@@ -27,6 +27,8 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
+        token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Configure Maven with GitHub Packages
       run: echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
       env:
