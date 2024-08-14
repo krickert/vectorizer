@@ -37,4 +37,4 @@ jobs:
       env:
         GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      run: ./mvnw package deploy --settings $HOME/.m2/settings.xml
+      run: mvn package deploy --settings $HOME/.m2/settings.xml
