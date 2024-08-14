@@ -28,4 +28,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
+      env:
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
       run: ./mvnw -B package --file pom.xml
