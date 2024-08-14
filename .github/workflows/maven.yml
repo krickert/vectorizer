@@ -37,4 +37,4 @@ jobs:
       env:
         GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      run: ./mvnw -B package --file pom.xml
+      run: mvn package deploy
