@@ -20,21 +20,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v3
+      
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v3
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: maven
-        token: ${{ secrets.GITHUB_TOKEN }}
-
+      
     - name: Configure Maven with GitHub Packages
-      run: echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml && cat $HOME/.m2/settings.xml
+      run: echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
       env:
         MAVEN_SETTINGS: ${{ secrets.MAVEN_SETTINGS }}
+  
     - name: Build with Maven
       env:
         GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      run: ./mvnw package deploy --settings $HOME/.m2/settings.xml
+      run: mvn -B package deploy --file pom.xml
