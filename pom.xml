@@ -60,6 +60,9 @@
             <id>github</id>
             <name>GitHub krickert Apache Maven Packages</name>
             <url>https://maven.pkg.github.com/krickert/rag-models</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
         </repository>
     </repositories>
     <dependencies>
