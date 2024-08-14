@@ -25,7 +25,32 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
+    <name>vectorizer</name>
+    <description>Sentence embedding service</description>
+    <url>http://github.com/krickert/vectorizer</url>
 
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Kristian Rickert</name>
+            <email>krickert@rokkon.com</email>
+            <organization>Rokkon</organization>
+            <organizationUrl>http://www.rokkon.com</organizationUrl>
+        </developer>
+    </developers>
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub krickert Apache Maven Packages</name>
+            <url>https://maven.pkg.github.com/krickert/rag-models</url>
+        </repository>
+    </distributionManagement>    
     <repositories>
         <repository>
             <id>central</id>
@@ -37,13 +62,6 @@
             <url>https://maven.pkg.github.com/krickert/rag-models</url>
         </repository>
     </repositories>
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub krickert Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/krickert/rag-models</url>
-        </repository>
-    </distributionManagement>
     <dependencies>
         <dependency>
             <groupId>io.micronaut</groupId>
