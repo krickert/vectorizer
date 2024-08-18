@@ -27,12 +27,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
 
       - name: Configure Maven with settings.xml
         run: |
@@ -58,21 +52,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: ./mvnw -B -Dpackaging=docker package jib:dockerBuild@build-amd64 --file pom.xml  -DskipTests=true
-
-      - name: Push AMD64 image
-        run: docker push docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }}-amd64
-
-      - name: Build the project for ARM64
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: ./mvnw -B -Dpackaging=docker package jib:dockerBuild@build-arm64 --file pom.xml -DskipTests=true
-
-      - name: Push ARM64 image
-        run: docker push docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }}-arm64
+        run: ./mvnw -Dpackaging=docker deploy -DskipTests=true
 
       - name: Create and push multi-architecture manifest
         run: |
