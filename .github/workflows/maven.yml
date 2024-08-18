@@ -28,12 +28,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
 
-      - name: Configure Maven with settings.xml
-        run: |
-          echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
-        env:
-          MAVEN_SETTINGS: ${{ secrets.MAVEN_SETTINGS }}
-
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -46,7 +40,13 @@ jobs:
         id: project-version
         run: echo "PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
-      - name: Build the project for AMD64
+      - name: Configure Maven with settings.xml
+        run: |
+          echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
+        env:
+          MAVEN_SETTINGS: ${{ secrets.MAVEN_SETTINGS }}
+
+      - name: Build the project 2 Platforms
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
