@@ -35,8 +35,7 @@ jobs:
           cache: maven
 
       - name: Configure Maven with settings.xml
-        run: |
-          echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
+        run: echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
         env:
           MAVEN_SETTINGS: ${{ secrets.MAVEN_SETTINGS }}
 
@@ -47,6 +46,10 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
+
+      - name: Get Project Version
+        id: project-version
+        run: echo "PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
       - name: Build the project for AMD64
         env:
@@ -69,6 +72,6 @@ jobs:
           docker buildx create --name mybuilder || true
           docker buildx use mybuilder
           docker buildx inspect --bootstrap
-          docker buildx imagetools create --tag krickert/${{ github.event.repository.name }}:${{ github.event.repository.default_branch }} \
-            krickert/${{ github.event.repository.name }}:${{ github.event.repository.default_branch }}-amd64 \
-            krickert/${{ github.event.repository.name }}:${{ github.event.repository.default_branch }}-arm64
+          docker buildx imagetools create --tag docker.io/krickert/${{ github.event.repository.name }}:${{ env.PROJECT_VERSION }} \
+            docker.io/krickert/${{ github.event.repository.name }}:${{ env.PROJECT_VERSION }}-amd64 \
+            docker.io/krickert/${{ github.event.repository.name }}:${{ env.PROJECT_VERSION }}-arm64
