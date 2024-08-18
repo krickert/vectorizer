@@ -286,6 +286,7 @@
                 <artifactId>jib-maven-plugin</artifactId>
                 <configuration>
                     <from>
+                        <image>openjdk:17-jdk-slim</image>
                         <platforms>
                             <platform>
                                 <os>linux</os>
