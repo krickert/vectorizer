@@ -292,8 +292,9 @@
                     <execution>
                         <id>build-amd64</id>
                         <goals>
-                            <goal>build</goal>
+                            <goal>dockerBuild</goal>
                         </goals>
+                        <phase>install</phase>
                         <configuration>
                             <to>
                                 <image>${amd64.tag}</image>
@@ -302,21 +303,14 @@
                                     <password>${env.DOCKER_PASSWORD}</password>
                                 </auth>
                             </to>
-                            <container>
-                                <platforms>
-                                    <platform>
-                                        <architecture>amd64</architecture>
-                                        <os>linux</os>
-                                    </platform>
-                                </platforms>
-                            </container>
                         </configuration>
                     </execution>
                     <execution>
                         <id>build-arm64</id>
                         <goals>
-                            <goal>build</goal>
+                            <goal>dockerBuild</goal>
                         </goals>
+                        <phase>install</phase>
                         <configuration>
                             <to>
                                 <image>${arm64.tag}</image>
@@ -325,14 +319,6 @@
                                     <password>${env.DOCKER_PASSWORD}</password>
                                 </auth>
                             </to>
-                            <container>
-                                <platforms>
-                                    <platform>
-                                        <architecture>arm64</architecture>
-                                        <os>linux</os>
-                                    </platform>
-                                </platforms>
-                            </container>
                         </configuration>
                     </execution>
                 </executions>
