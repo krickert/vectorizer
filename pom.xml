@@ -25,10 +25,6 @@
         <exec.mainClass>com.krickert.search.vectorizer.vectorizer.VectorizerApplication</exec.mainClass>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <docker.repo>docker.io/krickert/${project.name}</docker.repo>
-        <docker.tag>${project.version}</docker.tag>
-        <amd64.tag>${docker.repo}:${docker.tag}-amd64</amd64.tag>
-        <arm64.tag>${docker.repo}:${docker.tag}-arm64</arm64.tag>
     </properties>
     <name>vectorizer</name>
     <description>Sentence embedding service</description>
@@ -55,7 +51,7 @@
             <name>GitHub krickert Apache Maven Packages</name>
             <url>https://maven.pkg.github.com/krickert/rag-models</url>
         </repository>
-    </distributionManagement>    
+    </distributionManagement>
     <repositories>
         <repository>
             <id>central</id>
@@ -234,10 +230,10 @@
         </dependency-->
         <!-- https://mvnrepository.com/artifact/ai.djl.pytorch/pytorch-jni -->
         <dependency>
-          <groupId>ai.djl.pytorch</groupId>
-          <artifactId>pytorch-jni</artifactId>
-          <version>2.3.1-0.29.0</version>
-          <scope>runtime</scope>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-jni</artifactId>
+            <version>2.3.1-0.29.0</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
     <build>
@@ -288,40 +284,29 @@
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>build-amd64</id>
-                        <goals>
-                            <goal>dockerBuild</goal>
-                        </goals>
-                        <phase>install</phase>
-                        <configuration>
-                            <to>
-                                <image>${amd64.tag}</image>
-                                <auth>
-                                    <username>${env.DOCKER_USERNAME}</username>
-                                    <password>${env.DOCKER_PASSWORD}</password>
-                                </auth>
-                            </to>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>build-arm64</id>
-                        <goals>
-                            <goal>dockerBuild</goal>
-                        </goals>
-                        <phase>install</phase>
-                        <configuration>
-                            <to>
-                                <image>${arm64.tag}</image>
-                                <auth>
-                                    <username>${env.DOCKER_USERNAME}</username>
-                                    <password>${env.DOCKER_PASSWORD}</password>
-                                </auth>
-                            </to>
-                        </configuration>
-                    </execution>
-                </executions>
+                <configuration>
+                    <from>
+                        <platforms>
+                            <platform>
+                                <os>linux</os>
+                                <architecture>arm64</architecture>
+                            </platform>
+                            <platform>
+                                <os>linux</os>
+                                <architecture>amd64</architecture>
+                            </platform>
+                        </platforms>
+                    </from>
+                    <to>
+                        <image>docker.io/krickert/vectorizer:${project.version}</image>
+                    </to>
+                    <container>
+                        <ports>
+                            <port>60401</port>
+                            <port>50401</port>
+                        </ports>
+                    </container>
+                </configuration>
             </plugin>
         </plugins>
     </build>
