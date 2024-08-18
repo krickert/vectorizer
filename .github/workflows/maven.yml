@@ -35,7 +35,8 @@ jobs:
           cache: maven
 
       - name: Configure Maven with settings.xml
-        run: echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
+        run: |
+          echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
         env:
           MAVEN_SETTINGS: ${{ secrets.MAVEN_SETTINGS }}
 
@@ -57,7 +58,10 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: ./mvnw -B -Dpackaging=docker package jib:dockerBuild@build-amd64 --file pom.xml
+        run: ./mvnw -B -Dpackaging=docker package jib:dockerBuild@build-amd64 --file pom.xml  -DskipTests=true
+
+      - name: Push AMD64 image
+        run: docker push docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }}-amd64
 
       - name: Build the project for ARM64
         env:
@@ -65,13 +69,16 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: ./mvnw -B -Dpackaging=docker package jib:dockerBuild@build-arm64 --file pom.xml
+        run: ./mvnw -B -Dpackaging=docker package jib:dockerBuild@build-arm64 --file pom.xml -DskipTests=true
+
+      - name: Push ARM64 image
+        run: docker push docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }}-arm64
 
       - name: Create and push multi-architecture manifest
         run: |
           docker buildx create --name mybuilder || true
           docker buildx use mybuilder
           docker buildx inspect --bootstrap
-          docker buildx imagetools create --tag docker.io/krickert/${{ github.event.repository.name }}:${{ env.PROJECT_VERSION }} \
-            docker.io/krickert/${{ github.event.repository.name }}:${{ env.PROJECT_VERSION }}-amd64 \
-            docker.io/krickert/${{ github.event.repository.name }}:${{ env.PROJECT_VERSION }}-arm64
+          docker buildx imagetools create --tag docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }} \
+            docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }}-amd64 \
+            docker.io/krickert/vectorizer:${{ env.PROJECT_VERSION }}-arm64
