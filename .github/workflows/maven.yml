@@ -34,9 +34,11 @@ jobs:
       run: echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
       env:
         MAVEN_SETTINGS: ${{ secrets.MAVEN_SETTINGS }}
-  
+
     - name: Build with Maven
       env:
         GITHUB_ACTOR: ${{ github.actor }}
         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      run: ./mvnw -B package deploy --file pom.xml
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: ./mvnw -B -Dpackaging=docker package deploy --file pom.xml
