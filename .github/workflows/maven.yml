@@ -36,10 +36,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Get Project Version
-        id: project-version
-        run: echo "PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
-
       - name: Configure Maven with settings.xml
         run: |
           echo $MAVEN_SETTINGS | base64 --decode > $HOME/.m2/settings.xml
@@ -53,6 +49,10 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: ./mvnw -Dpackaging=docker deploy -DskipTests=true
+
+      - name: Get Project Version for multi-arch build
+        id: project-version
+        run: echo "PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
       - name: Create and push multi-architecture manifest
         run: |
