@@ -6,6 +6,7 @@ import com.krickert.search.service.EmbeddingServiceGrpc;
 import com.krickert.search.service.EmbeddingsVectorReply;
 import com.krickert.search.service.EmbeddingsVectorRequest;
 import com.krickert.search.service.EmbeddingsVectorsReply;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.micronaut.core.util.StringUtils;
 import io.micronaut.runtime.EmbeddedApplication;
@@ -115,9 +116,10 @@ class GrpcEmbeddingsServiceTest {
                     assertNotNull(reply);
                     assertTrue(reply.getEmbeddingsList().size() > 100);
                     finishedDocuments.incrementAndGet();
-                } catch (Exception e) {
+                } catch (StatusRuntimeException e) {
                     log.error("Last embedding throws an exception. Text: [{}] Finished Docs: [{}] Exception: [{}]", text,
                             finishedDocuments.get(), e.getMessage());
+                    throw e;
                 }
             });
 
@@ -144,7 +146,7 @@ class GrpcEmbeddingsServiceTest {
         //"works on my local" they say.  "Trump will never win the election" they said.
         //lies, blantant lies.
         log.info("waiting for 500 seconds max for all 367 documents to be processed..");
-        await().atMost(500, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() >= 350);
+        await().atMost(500, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() == 367);
     }
 
 }
