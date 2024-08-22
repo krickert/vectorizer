@@ -13,6 +13,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * This class represents the implementation of the gRPC endpoint for creating embeddings vectors.
+ * It extends the abstract class EmbeddingServiceImplBase, which is the base class for the server implementation
+ * of the EmbeddingService.
+ */
 @Singleton
 public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImplBase {
     private final Vectorizer vectorizer;
@@ -21,6 +26,12 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
         this.vectorizer = vectorizer;
     }
 
+    /**
+     * Creates an embeddings vector based on the given request and sends the reply to the response observer.
+     *
+     * @param request           The request containing the text to generate the embeddings vector from.
+     * @param responseObserver The response observer to send the reply to.
+     */
     @Override
     public void createEmbeddingsVector(EmbeddingsVectorRequest request, StreamObserver<EmbeddingsVectorReply> responseObserver) {
         EmbeddingsVectorReply.Builder builder = EmbeddingsVectorReply.newBuilder();
@@ -30,9 +41,22 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
         sendReply(responseObserver, reply);
     }
 
+    /**
+     * Creates embeddings vectors based on the given request and sends the reply to the response observer.
+     *
+     * @param request           The request containing the text to generate the embeddings vectors from.
+     *                           It is an instance of EmbeddingsVectorsRequest.
+     * @param responseObserver The response observer to send the reply to.
+     *                           It is an instance of StreamObserver<EmbeddingsVectorsReply>.
+     *
+     * @throws NullPointerException if the request or responseObserver is null.
+     */
     @Override
     public void createEmbeddingsVectors(EmbeddingsVectorsRequest request, StreamObserver<EmbeddingsVectorsReply> responseObserver) {
         EmbeddingsVectorsReply.Builder builder = EmbeddingsVectorsReply.newBuilder();
+        // Utilizing a parallel stream in Java does not necessarily guarantee that the order of the elements
+        // will be maintained. In this case, the order of elements in the output will remain consistent
+        // with the order in the input list because the operation we've applied (.map()) is stateless and non-interfering.
         List<EmbeddingsVectorReply> embeddings = request.getTextList().parallelStream()
                 .map(text -> {
                     Collection<Float> vector = vectorizer.getEmbeddings(text);
@@ -49,7 +73,7 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
      * Sends the reply to the response observer.
      *
      * @param responseObserver The response observer to send the reply.
-     * @param reply The reply to be sent.
+     * @param reply            The reply to be sent.
      */
     private <T> void sendReply(StreamObserver<T> responseObserver, T reply) {
         responseObserver.onNext(reply);
