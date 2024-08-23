@@ -3,6 +3,7 @@ package com.krickert.search.vectorizer;
 import ai.djl.MalformedModelException;
 import ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory;
 import ai.djl.inference.Predictor;
+import ai.djl.pytorch.jni.JniUtils;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.repository.zoo.ZooModel;
@@ -10,14 +11,25 @@ import ai.djl.translate.TranslateException;
 import com.google.common.collect.Lists;
 import io.micronaut.context.annotation.Prototype;
 import io.micronaut.context.annotation.Value;
+import io.micronaut.core.io.ResourceLoader;
+import io.micronaut.core.util.StringUtils;
+import jakarta.inject.Inject;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.Optional;
 
 
 /**
@@ -32,13 +44,35 @@ public class SentenceVectorizer implements Vectorizer {
 
     final Criteria<String, float[]> criteria;
     final ZooModel<String, float[]> model;
+    final ResourceLoader resourceLoader;
 
     /**
      * The Vectorizer class is responsible for converting text inputs into vector embeddings
      * using a pre-trained model.
      */
-    public SentenceVectorizer(@Value("${vectorizer.model.url}") String modelUrl) throws ModelNotFoundException, MalformedModelException, IOException {
-        this.modelUrl = modelUrl;
+    public SentenceVectorizer(@Value("${vectorizer.model.url}") String modelUrl,
+                              @Value("${vectorizer.temp-dir}") String tempDir,
+                              ResourceLoader resourceLoader) throws ModelNotFoundException, MalformedModelException, IOException {
+        this.resourceLoader = resourceLoader;
+        if (StringUtils.isNotEmpty(modelUrl) && modelUrl.endsWith(".zip")) {
+            Optional<URL> model = resourceLoader.getResource(modelUrl);
+            if (model.isPresent()) {
+                String modelUrlFull = model.get().toString();
+                if (modelUrlFull.startsWith("jar:")) {
+                    URL extractedJar = extractResourceFromJar(modelUrl, tempDir);
+                    this.modelUrl = extractedJar.toString();
+                } else {
+                    this.modelUrl = model.get().toString();
+                }
+            } else {
+                this.modelUrl = modelUrl;
+                log.warn("Model url specified to load is {} and ended in a zip file.  An attempt was " +
+                        "made to load the model using the micronaut resource loader but it failed.  " +
+                        "Trying the URL directly through DJL instead.", modelUrl);
+            }
+        } else {
+            this.modelUrl = modelUrl;
+        }
         this.criteria = makeCriteria();
         this.model = this.criteria.loadModel();
     }
@@ -48,6 +82,8 @@ public class SentenceVectorizer implements Vectorizer {
      * @return The Criteria object for text embedding translation.
      */
     private Criteria<String, float[]> makeCriteria() {
+
+
         return Criteria.builder()
                 .setTypes(String.class, float[].class)
                 .optModelUrls(modelUrl)
@@ -99,5 +135,25 @@ public class SentenceVectorizer implements Vectorizer {
         return response;
     }
 
+    public URL extractResourceFromJar(String resourcePath, String targetDirectory) throws IOException {
+        Optional<InputStream> resourceStreamOpt = resourceLoader.getResourceAsStream(resourcePath);
+
+        if (resourceStreamOpt.isEmpty()) {
+            throw new IOException("Resource not found: " + resourcePath);
+        }
+
+        Path targetDirPath = Paths.get(targetDirectory);
+        if (!Files.exists(targetDirPath)) {
+            Files.createDirectories(targetDirPath);
+        }
+
+        Path targetFilePath = targetDirPath.resolve(Paths.get(resourcePath).getFileName().toString());
+        try (InputStream resourceStream = resourceStreamOpt.get();
+             FileOutputStream outputStream = new FileOutputStream(targetFilePath.toFile())) {
+            IOUtils.copy(resourceStream, outputStream);
+        }
+
+        return targetFilePath.toUri().toURL();
+    }
 }
 
