@@ -60,6 +60,7 @@ public class SentenceVectorizer implements Vectorizer {
                 String modelUrlFull = model.get().toString();
                 if (modelUrlFull.startsWith("jar:")) {
                     URL extractedJar = extractResourceFromJar(modelUrl, tempDir);
+                    log.info("saved model to {}", extractedJar.toString());
                     this.modelUrl = extractedJar.toString();
                 } else {
                     this.modelUrl = model.get().toString();

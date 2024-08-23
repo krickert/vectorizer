@@ -34,6 +34,6 @@ vectorizer:
     #url: "file:/Users/krickert/models/all-MiniLM-L6-v2.zip"
     #However, all-MiniLM is packaged by default in the jar
     #For convenience, if you specify a zip file it will attempt to
-    url: "djl://ai.djl.hudggingface.pytorch/sentence-transformers/all-MiniLM-L12-v2"
-    #url: all-MiniLM-L12-v2.zip
+    #url: "djl://ai.djl.huggingface.pytorch/sentence-transformers/all-MiniLM-L12-v2"
+    url: all-MiniLM-L12-v2.zip
 

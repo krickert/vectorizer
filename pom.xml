@@ -235,6 +235,35 @@
           <version>2.3.1-0.29.0</version>
           <scope>runtime</scope>
         </dependency>
+        <!--dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-native-cpu</artifactId>
+            <classifier>osx-aarch64</classifier>
+            <version>2.3.1</version>
+            <scope>runtime</scope>
+        </dependency-->
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-native-cpu</artifactId>
+            <classifier>linux-x86_64</classifier>
+            <version>2.3.1</version>
+            <scope>runtime</scope>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>ai.djl.pytorch</groupId>-->
+<!--            <artifactId>pytorch-native-cpu-precxx11</artifactId>-->
+<!--            <classifier>linux-aarch64</classifier>-->
+<!--            <scope>runtime</scope>-->
+<!--            <version>2.3.1</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>ai.djl.pytorch</groupId>-->
+<!--            <artifactId>pytorch-native-cpu-precxx11</artifactId>-->
+<!--            <classifier>linux-x86_64</classifier>-->
+<!--            <version>2.3.1</version>-->
+<!--            <scope>runtime</scope>-->
+<!--        </dependency>-->
+
     </dependencies>
     <build>
         <plugins>
