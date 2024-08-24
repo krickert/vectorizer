@@ -79,6 +79,4 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
     }
-
-
 }
