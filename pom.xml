@@ -103,12 +103,6 @@
             <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.5.7</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <scope>runtime</scope>
@@ -117,12 +111,6 @@
             <groupId>io.micronaut.testresources</groupId>
             <artifactId>micronaut-test-resources-client</artifactId>
             <scope>test</scope>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-compress -->
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
-            <version>1.27.0</version>
         </dependency>
         <dependency>
             <groupId>com.krickert.search</groupId>
@@ -235,6 +223,35 @@
           <version>2.3.1-0.29.0</version>
           <scope>runtime</scope>
         </dependency>
+        <!--dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-native-cpu</artifactId>
+            <classifier>osx-aarch64</classifier>
+            <version>2.3.1</version>
+            <scope>runtime</scope>
+        </dependency-->
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-native-cpu</artifactId>
+            <classifier>linux-x86_64</classifier>
+            <version>2.3.1</version>
+            <scope>runtime</scope>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>ai.djl.pytorch</groupId>-->
+<!--            <artifactId>pytorch-native-cpu-precxx11</artifactId>-->
+<!--            <classifier>linux-aarch64</classifier>-->
+<!--            <scope>runtime</scope>-->
+<!--            <version>2.3.1</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>ai.djl.pytorch</groupId>-->
+<!--            <artifactId>pytorch-native-cpu-precxx11</artifactId>-->
+<!--            <classifier>linux-x86_64</classifier>-->
+<!--            <version>2.3.1</version>-->
+<!--            <scope>runtime</scope>-->
+<!--        </dependency>-->
+
     </dependencies>
     <build>
         <plugins>
@@ -288,7 +305,9 @@
                     <to>
                         <image>docker.io/krickert/${project.name}:${project.version}</image>
                         <auth>
+                            <!--suppress UnresolvedMavenProperty -->
                             <username>${env.DOCKER_USERNAME}</username>
+                            <!--suppress UnresolvedMavenProperty -->
                             <password>${env.DOCKER_PASSWORD}</password>
                         </auth>
                     </to>
