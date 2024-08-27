@@ -1,10 +1,6 @@
 package com.krickert.search.vectorizer.grpc;
 
-import com.krickert.search.service.EmbeddingsVectorRequest;
-import com.krickert.search.service.EmbeddingsVectorsRequest;
-import com.krickert.search.service.EmbeddingsVectorReply;
-import com.krickert.search.service.EmbeddingsVectorsReply;
-import com.krickert.search.service.EmbeddingServiceGrpc;
+import com.krickert.search.service.*;
 import com.krickert.search.vectorizer.Vectorizer;
 import io.grpc.stub.StreamObserver;
 import jakarta.inject.Singleton;
@@ -67,6 +63,12 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
                 .collect(Collectors.toList());
         builder.addAllEmbeddings(embeddings);
         sendReply(responseObserver, builder.build());
+    }
+
+    @Override
+    public void check(HealthCheckRequest request, StreamObserver<HealthCheckReply> responseObserver) {
+        HealthCheckReply reply = HealthCheckReply.newBuilder().setStatus("EmbeddingService is running").build();
+        sendReply(responseObserver, reply);
     }
 
     /**
