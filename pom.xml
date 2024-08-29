@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://www.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.krickert.search</groupId>
     <artifactId>vectorizer</artifactId>
@@ -25,6 +25,8 @@
         <exec.mainClass>com.krickert.search.vectorizer.vectorizer.VectorizerApplication</exec.mainClass>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <pytorch.version>2.3.1</pytorch.version>
+        <pytorch.djl>0.29.0</pytorch.djl>
     </properties>
     <name>vectorizer</name>
     <description>Sentence embedding service</description>
@@ -51,7 +53,7 @@
             <name>GitHub krickert Apache Maven Packages</name>
             <url>https://maven.pkg.github.com/krickert/rag-models</url>
         </repository>
-    </distributionManagement>    
+    </distributionManagement>
     <repositories>
         <repository>
             <id>central</id>
@@ -66,7 +68,151 @@
             </snapshots>
         </repository>
     </repositories>
+    <profiles>
+        <!-- Profile for x86_64 Linux -->
+        <profile>
+            <id>linux-x86_64</id>
+            <activation>
+                <property>
+                    <name>osAndArch</name>
+                    <value>linux-x86_64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-native-cpu</artifactId>
+                    <classifier>linux-x86_64</classifier>
+                    <scope>runtime</scope>
+                    <version>${pytorch.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-native-cpu-precxx11</artifactId>
+                    <classifier>linux-x86_64</classifier>
+                    <scope>runtime</scope>
+                    <version>${pytorch.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-jni</artifactId>
+                    <version>${pytorch.version}-${pytorch.djl}</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Profile for arm64 Linux -->
+        <profile>
+            <id>linux-arm64</id>
+            <activation>
+                <property>
+                    <name>osAndArch</name>
+                    <value>linux-arm64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-native-cpu-precxx11</artifactId>
+                    <classifier>linux-aarch64</classifier>
+                    <scope>runtime</scope>
+                    <version>${pytorch.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-jni</artifactId>
+                    <version>${pytorch.version}-${pytorch.djl}</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Profile for Windows -->
+        <profile>
+            <id>windows</id>
+            <activation>
+                <property>
+                    <name>osAndArch</name>
+                    <value>windows</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-native-cpu</artifactId>
+                    <classifier>win-x86_64</classifier>
+                    <scope>runtime</scope>
+                    <version>${pytorch.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-native-cu121</artifactId>
+                    <classifier>win-x86_64</classifier>
+                    <version>${pytorch.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-jni</artifactId>
+                    <version>${pytorch.version}-${pytorch.djl}</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Profile for ARM64 macOS -->
+        <profile>
+            <id>osx-arm64</id>
+            <activation>
+                <property>
+                    <name>osAndArch</name>
+                    <value>osx-arm64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.djl.pytorch</groupId>
+                    <artifactId>pytorch-native-cpu</artifactId>
+                    <classifier>osx-aarch64</classifier>
+                    <version>${pytorch.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!-- Profile to print detected OS and architecture -->
+        <profile>
+            <id>print-os-arch</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <tasks>
+                                        <!--suppress UnresolvedMavenProperty -->
+                                        <echo message="Detected OS: ${os.detected.name}"/>
+                                        <!--suppress UnresolvedMavenProperty -->
+                                        <echo message="Detected Arch: ${os.detected.arch}"/>
+                                    </tasks>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <dependencies>
+        <!-- Other Dependencies -->
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-http-client</artifactId>
@@ -92,11 +238,6 @@
             <artifactId>micronaut-serde-jackson</artifactId>
             <scope>compile</scope>
         </dependency>
-        <!--dependency>
-            <groupId>io.micronaut.discovery</groupId>
-            <artifactId>micronaut-discovery-client</artifactId>
-            <scope>compile</scope>
-        </dependency-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
@@ -189,72 +330,54 @@
             <artifactId>micronaut-openapi-annotations</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/ai.djl.huggingface/tokenizers -->
         <dependency>
             <groupId>ai.djl.huggingface</groupId>
             <artifactId>tokenizers</artifactId>
-            <version>0.29.0</version>
+            <version>${pytorch.djl}</version>
         </dependency>
         <dependency>
             <groupId>ai.djl.pytorch</groupId>
             <artifactId>pytorch-model-zoo</artifactId>
-            <version>0.29.0</version>
+            <version>${pytorch.djl}</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/ai.djl.pytorch/pytorch-native-cpu -->
-        <dependency>
-            <groupId>ai.djl.pytorch</groupId>
-            <artifactId>pytorch-native-cpu</artifactId>
-            <version>2.3.1</version>
-        </dependency>
-        <!-- for GPU acceleration but made jar 1.6G -->
-        <!-- If running this on an x86 machine, it's good to turn this on if you have an nvidia GPU -->
-        <!-- keeping this for now.  Will need to see how to integrate it in the container later -->
-        <!--dependency>
-          <groupId>ai.djl.pytorch</groupId>
-          <artifactId>pytorch-native-cu119</artifactId>
-          <classifier>linux-x86_64</classifier>
-          <version>2.3.0</version>
-          <scope>runtime</scope>
-        </dependency-->
-        <!-- https://mvnrepository.com/artifact/ai.djl.pytorch/pytorch-jni -->
-        <dependency>
-          <groupId>ai.djl.pytorch</groupId>
-          <artifactId>pytorch-jni</artifactId>
-          <version>2.3.1-0.29.0</version>
-          <scope>runtime</scope>
-        </dependency>
-        <!--dependency>
-            <groupId>ai.djl.pytorch</groupId>
-            <artifactId>pytorch-native-cpu</artifactId>
-            <classifier>osx-aarch64</classifier>
-            <version>2.3.1</version>
-            <scope>runtime</scope>
-        </dependency-->
-        <dependency>
-            <groupId>ai.djl.pytorch</groupId>
-            <artifactId>pytorch-native-cpu</artifactId>
-            <classifier>linux-x86_64</classifier>
-            <version>2.3.1</version>
-            <scope>runtime</scope>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>ai.djl.pytorch</groupId>-->
-<!--            <artifactId>pytorch-native-cpu-precxx11</artifactId>-->
-<!--            <classifier>linux-aarch64</classifier>-->
-<!--            <scope>runtime</scope>-->
-<!--            <version>2.3.1</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>ai.djl.pytorch</groupId>-->
-<!--            <artifactId>pytorch-native-cpu-precxx11</artifactId>-->
-<!--            <classifier>linux-x86_64</classifier>-->
-<!--            <version>2.3.1</version>-->
-<!--            <scope>runtime</scope>-->
-<!--        </dependency>-->
-
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.7.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>detect</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>detect-os-arch</id>
+                        <goals>
+                            <goal>regex-property</goal>
+                        </goals>
+                        <configuration>
+                            <name>osAndArch</name>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <value>${os.detected.name}-${os.detected.arch}</value>
+                            <regex>
+                                (^osx-aarch64$)|(^linux-x86_64$)|(^linux-arm64$)|(^win-x86_64$)
+                            </regex>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <replacement>${os.detected.name}-${os.detected.arch}</replacement>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>io.micronaut.maven</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
@@ -315,5 +438,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
