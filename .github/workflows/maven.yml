@@ -18,7 +18,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-got s
     steps:
     - name: Checkout repository and submodules
       uses: actions/checkout@v4
