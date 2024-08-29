@@ -26,9 +26,9 @@ public class SentenceEmbeddingsModelLookupEndpoint extends SentenceEmbeddingMode
      * @param responseObserver The response observer to send the lookup reply.
      */
     @Override
-    public void lookupModel(SentenceEmbeddingModelLookupRequest request, StreamObserver<SentenceEmbeddingModelLookupReply> responseObserver) {
+    public void lookupModel(SentenceEmbeddingModelProto.SentenceEmbeddingModelLookupRequest request, StreamObserver<SentenceEmbeddingModelProto.SentenceEmbeddingModelLookupReply> responseObserver) {
         try {
-            SentenceEmbeddingModelLookupReply reply = SentenceEmbeddingModelLookupReply.newBuilder()
+            SentenceEmbeddingModelProto.SentenceEmbeddingModelLookupReply reply = SentenceEmbeddingModelProto.SentenceEmbeddingModelLookupReply.newBuilder()
                     .setDetails(findSentenceEmbeddingModel(request))
                     .setResponseTime(com.google.protobuf.Timestamp.newBuilder().setSeconds(System.currentTimeMillis() / 1000))
                     .build();
@@ -45,11 +45,11 @@ public class SentenceEmbeddingsModelLookupEndpoint extends SentenceEmbeddingMode
      * @return The sentence embedding model details.
      * @throws StatusException If the model is not found for the given type.
      */
-    private SentenceEmbeddings.SentenceEmbeddingModelDetails findSentenceEmbeddingModel(SentenceEmbeddingModelLookupRequest request) throws StatusException {
+    private SentenceEmbeddingModelDetails findSentenceEmbeddingModel(SentenceEmbeddingModelProto.SentenceEmbeddingModelLookupRequest request) throws StatusException {
         NLPModel nlpModel = convertToNLPModel(request.getModelType());
 
         if (nlpModel != null) {
-            return SentenceEmbeddings.SentenceEmbeddingModelDetails.newBuilder()
+            return SentenceEmbeddingModelDetails.newBuilder()
                     .setModelType(request.getModelType())
                     .setModelName(nlpModel.getModelName())
                     .setUrl(nlpModel.getUrl())
@@ -65,7 +65,7 @@ public class SentenceEmbeddingsModelLookupEndpoint extends SentenceEmbeddingMode
      * @param modelType The SentenceEmbeddings.SentenceEmbeddingType to convert.
      * @return The NLPModel corresponding to the given modelType.
      */
-    private NLPModel convertToNLPModel(SentenceEmbeddings.SentenceEmbeddingType modelType) {
+    private NLPModel convertToNLPModel(SentenceEmbeddingType modelType) {
         switch (modelType) {
             case ALL_MINILM_L12_V2:
                 return NLPModel.ALL_MINILM_L12_V2;
