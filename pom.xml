@@ -93,12 +93,6 @@
                     <scope>runtime</scope>
                     <version>${pytorch.version}</version>
                 </dependency>
-                <dependency>
-                    <groupId>ai.djl.pytorch</groupId>
-                    <artifactId>pytorch-jni</artifactId>
-                    <version>${pytorch.version}-${pytorch.djl}</version>
-                    <scope>runtime</scope>
-                </dependency>
             </dependencies>
         </profile>
 
@@ -340,6 +334,12 @@
             <artifactId>pytorch-model-zoo</artifactId>
             <version>${pytorch.djl}</version>
         </dependency>
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-jni</artifactId>
+            <version>${pytorch.version}-${pytorch.djl}</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -370,7 +370,7 @@
                             <!--suppress UnresolvedMavenProperty -->
                             <value>${os.detected.name}-${os.detected.arch}</value>
                             <regex>
-                                (^osx-aarch64$)|(^linux-x86_64$)|(^linux-arm64$)|(^win-x86_64$)
+                                (^osx-aarch_64)|(^linux-x86_64$)|(^linux-arm64$)|(^win-x86_64$)
                             </regex>
                             <!--suppress UnresolvedMavenProperty -->
                             <replacement>${os.detected.name}-${os.detected.arch}</replacement>
