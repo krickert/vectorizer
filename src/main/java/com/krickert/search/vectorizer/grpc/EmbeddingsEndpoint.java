@@ -3,10 +3,14 @@ package com.krickert.search.vectorizer.grpc;
 import com.krickert.search.service.*;
 import com.krickert.search.vectorizer.Vectorizer;
 import io.grpc.stub.StreamObserver;
+import io.micronaut.scheduling.TaskExecutors;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -16,53 +20,65 @@ import java.util.stream.Collectors;
  */
 @Singleton
 public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImplBase {
-    private final Vectorizer vectorizer;
+    private static final int BATCH_SIZE = 100; // Adjust the batch size based on your need
 
-    public EmbeddingsEndpoint(Vectorizer vectorizer) {
+    private final Vectorizer vectorizer;
+    private final ExecutorService batchExecutor;
+
+    public EmbeddingsEndpoint(Vectorizer vectorizer, @Named(TaskExecutors.IO) ExecutorService batchExecutor) {
         this.vectorizer = vectorizer;
+        this.batchExecutor = batchExecutor;
     }
 
     /**
-     * Creates an embeddings vector based on the given request and sends the reply to the response observer.
-     *
-     * @param request           The request containing the text to generate the embeddings vector from.
-     * @param responseObserver The response observer to send the reply to.
+     * Creates embeddings vector based on the given request and sends the reply to the response observer.
      */
     @Override
     public void createEmbeddingsVector(EmbeddingsVectorRequest request, StreamObserver<EmbeddingsVectorReply> responseObserver) {
-        EmbeddingsVectorReply.Builder builder = EmbeddingsVectorReply.newBuilder();
-        Collection<Float> embeddings = vectorizer.getEmbeddings(request.getText());
-        builder.addAllEmbeddings(embeddings);
-        EmbeddingsVectorReply reply = builder.build();
+        EmbeddingsVectorReply reply = createEmbeddingsReply(request.getText());
         sendReply(responseObserver, reply);
     }
 
     /**
      * Creates embeddings vectors based on the given request and sends the reply to the response observer.
-     *
-     * @param request           The request containing the text to generate the embeddings vectors from.
-     *                           It is an instance of EmbeddingsVectorsRequest.
-     * @param responseObserver The response observer to send the reply to.
-     *                           It is an instance of StreamObserver<EmbeddingsVectorsReply>.
-     *
-     * @throws NullPointerException if the request or responseObserver is null.
      */
     @Override
     public void createEmbeddingsVectors(EmbeddingsVectorsRequest request, StreamObserver<EmbeddingsVectorsReply> responseObserver) {
-        EmbeddingsVectorsReply.Builder builder = EmbeddingsVectorsReply.newBuilder();
-        // Utilizing a parallel stream in Java does not necessarily guarantee that the order of the elements
-        // will be maintained. In this case, the order of elements in the output will remain consistent
-        // with the order in the input list because the operation we've applied (.map()) is stateless and non-interfering.
-        List<EmbeddingsVectorReply> embeddings = request.getTextList().parallelStream()
-                .map(text -> {
-                    Collection<Float> vector = vectorizer.getEmbeddings(text);
-                    EmbeddingsVectorReply.Builder replyBuilder = EmbeddingsVectorReply.newBuilder();
-                    replyBuilder.addAllEmbeddings(vector);
-                    return replyBuilder.build();
-                })
-                .collect(Collectors.toList());
+        try {
+            List<String> texts = request.getTextList();
+            List<Future<List<EmbeddingsVectorReply>>> futures = new ArrayList<>();
+
+            // Divide the list into batches and process
+            for (int i = 0; i < texts.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, texts.size());
+                List<String> batch = texts.subList(i, end);
+                futures.add(batchExecutor.submit(() -> processBatch(batch)));
+            }
+
+            List<EmbeddingsVectorReply> allReplies = new ArrayList<>();
+            for (Future<List<EmbeddingsVectorReply>> future : futures) {
+                allReplies.addAll(future.get());
+            }
+
+            EmbeddingsVectorsReply.Builder builder = EmbeddingsVectorsReply.newBuilder();
+            builder.addAllEmbeddings(allReplies);
+            sendReply(responseObserver, builder.build());
+        } catch (InterruptedException | ExecutionException e) {
+            responseObserver.onError(e);
+        }
+    }
+
+    private EmbeddingsVectorReply createEmbeddingsReply(String text) {
+        Collection<Float> embeddings = vectorizer.getEmbeddings(text);
+        EmbeddingsVectorReply.Builder builder = EmbeddingsVectorReply.newBuilder();
         builder.addAllEmbeddings(embeddings);
-        sendReply(responseObserver, builder.build());
+        return builder.build();
+    }
+
+    private List<EmbeddingsVectorReply> processBatch(List<String> texts) {
+        return texts.stream()
+                .map(this::createEmbeddingsReply)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -73,9 +89,6 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
 
     /**
      * Sends the reply to the response observer.
-     *
-     * @param responseObserver The response observer to send the reply.
-     * @param reply            The reply to be sent.
      */
     private <T> void sendReply(StreamObserver<T> responseObserver, T reply) {
         responseObserver.onNext(reply);

@@ -16,7 +16,11 @@ consul:
     defaultZone: ${CONSUL_HOST:localhost}:${CONSUL_PORT:8500}
     registration:
       enabled: false
-
+  executors:
+    batch-executor:
+      type: fixed
+      n-threads: 10 # Adjustable based on your machine's capacity
+      prestart: true
 grpc:
   server:
     port: 50401
