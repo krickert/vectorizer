@@ -25,8 +25,8 @@
         <exec.mainClass>com.krickert.search.vectorizer.vectorizer.VectorizerApplication</exec.mainClass>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <pytorch.version>2.3.1</pytorch.version>
-        <pytorch.djl>0.29.0</pytorch.djl>
+        <pytorch.version>2.4.0</pytorch.version>
+        <pytorch.djl>0.30.0</pytorch.djl>
     </properties>
     <name>vectorizer</name>
     <description>Sentence embedding service</description>
