@@ -10,3 +10,9 @@ updates:
     schedule:
       interval: "daily"
 
+registries:
+  github-packages:
+    type: maven
+    url: https://maven.pkg.github.com/krickert/rag-models
+    username: krickert
+    password: ${{secrets.GH_PAT}}
