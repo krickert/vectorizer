@@ -436,19 +436,17 @@
                     </to>
                     <from>
                         <image>eclipse-temurin:17</image>
-
                         <platforms>
-                        <platform>
-                            <architecture>amd64</architecture>
-                            <os>linux</os>
-                        </platform>
-                        <platform>
-                            <architecture>arm64</architecture>
-                            <os>linux</os>
-                        </platform>
-                    </platforms>
+                            <platform>
+                                 <architecture>amd64</architecture>
+                                 <os>linux</os>
+                            </platform>
+                            <platform>
+                                 <architecture>arm64</architecture>
+                                 <os>linux</os>
+                            </platform>
+                        </platforms>
                     </from>
-
                 </configuration>
             </plugin>
         </plugins>
