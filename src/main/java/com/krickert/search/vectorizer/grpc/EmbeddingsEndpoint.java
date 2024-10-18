@@ -3,15 +3,14 @@ package com.krickert.search.vectorizer.grpc;
 import com.krickert.search.service.*;
 import com.krickert.search.vectorizer.Vectorizer;
 import io.grpc.stub.StreamObserver;
-import io.micronaut.scheduling.TaskExecutors;
-import jakarta.inject.Named;
 import jakarta.inject.Singleton;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import java.util.concurrent.Semaphore;
 
 /**
  * This class represents the implementation of the gRPC endpoint for creating embeddings vectors.
@@ -20,14 +19,12 @@ import java.util.stream.Collectors;
  */
 @Singleton
 public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImplBase {
-    private static final int BATCH_SIZE = 100; // Adjust the batch size based on your need
-
     private final Vectorizer vectorizer;
-    private final ExecutorService batchExecutor;
+    private final Semaphore semaphore;
 
-    public EmbeddingsEndpoint(Vectorizer vectorizer, @Named(TaskExecutors.IO) ExecutorService batchExecutor) {
+    public EmbeddingsEndpoint(Vectorizer vectorizer) {
         this.vectorizer = vectorizer;
-        this.batchExecutor = batchExecutor;
+        this.semaphore = new Semaphore(10); // Limit the number of concurrent requests to match predictor pool size
     }
 
     /**
@@ -35,50 +32,48 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
      */
     @Override
     public void createEmbeddingsVector(EmbeddingsVectorRequest request, StreamObserver<EmbeddingsVectorReply> responseObserver) {
-        EmbeddingsVectorReply reply = createEmbeddingsReply(request.getText());
-        sendReply(responseObserver, reply);
+        Mono.fromCallable(() -> {
+                    acquireSemaphore();
+                    return vectorizer.embeddings(request.getText(), Optional.empty());
+                })
+                .doOnTerminate(this::releaseSemaphore)
+                .map(this::createEmbeddingsReply)
+                .subscribeOn(Schedulers.boundedElastic())
+                .subscribe(reply -> sendReply(responseObserver, reply), responseObserver::onError);
     }
 
-    /**
-     * Creates embeddings vectors based on the given request and sends the reply to the response observer.
-     */
     @Override
     public void createEmbeddingsVectors(EmbeddingsVectorsRequest request, StreamObserver<EmbeddingsVectorsReply> responseObserver) {
-        try {
-            List<String> texts = request.getTextList();
-            List<Future<List<EmbeddingsVectorReply>>> futures = new ArrayList<>();
+        List<String> texts = request.getTextList();
+        EmbeddingsVectorsReply.Builder builder = EmbeddingsVectorsReply.newBuilder();
 
-            // Divide the list into batches and process
-            for (int i = 0; i < texts.size(); i += BATCH_SIZE) {
-                int end = Math.min(i + BATCH_SIZE, texts.size());
-                List<String> batch = texts.subList(i, end);
-                futures.add(batchExecutor.submit(() -> processBatch(batch)));
-            }
-
-            List<EmbeddingsVectorReply> allReplies = new ArrayList<>();
-            for (Future<List<EmbeddingsVectorReply>> future : futures) {
-                allReplies.addAll(future.get());
-            }
-
-            EmbeddingsVectorsReply.Builder builder = EmbeddingsVectorsReply.newBuilder();
-            builder.addAllEmbeddings(allReplies);
-            sendReply(responseObserver, builder.build());
-        } catch (InterruptedException | ExecutionException e) {
-            responseObserver.onError(e);
-        }
+        Flux.fromIterable(texts)
+                .flatMap(text -> Mono.fromCallable(() -> {
+                            acquireSemaphore();
+                            return vectorizer.embeddings(text, Optional.empty());
+                        })
+                        .doOnTerminate(this::releaseSemaphore)
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .map(this::createEmbeddingsReply)
+                        .onErrorResume(e -> {
+                            responseObserver.onError(e);
+                            return Mono.empty();
+                        }))
+                .doOnNext(builder::addEmbeddings)
+                .then()
+                .doOnTerminate(() -> {
+                    responseObserver.onNext(builder.build());
+                    responseObserver.onCompleted();
+                })
+                .subscribe();
     }
 
-    private EmbeddingsVectorReply createEmbeddingsReply(String text) {
-        Collection<Float> embeddings = vectorizer.getEmbeddings(text);
+    private EmbeddingsVectorReply createEmbeddingsReply(float[] embeddings) {
         EmbeddingsVectorReply.Builder builder = EmbeddingsVectorReply.newBuilder();
-        builder.addAllEmbeddings(embeddings);
+        for (float value : embeddings) {
+            builder.addEmbeddings(value);
+        }
         return builder.build();
-    }
-
-    private List<EmbeddingsVectorReply> processBatch(List<String> texts) {
-        return texts.stream()
-                .map(this::createEmbeddingsReply)
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -93,5 +88,24 @@ public class EmbeddingsEndpoint extends EmbeddingServiceGrpc.EmbeddingServiceImp
     private <T> void sendReply(StreamObserver<T> responseObserver, T reply) {
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
+    }
+
+    /**
+     * Acquires a permit from the semaphore to limit concurrency.
+     */
+    private void acquireSemaphore() {
+        try {
+            semaphore.acquire();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Failed to acquire semaphore", e);
+        }
+    }
+
+    /**
+     * Releases a permit back to the semaphore.
+     */
+    private void releaseSemaphore() {
+        semaphore.release();
     }
 }

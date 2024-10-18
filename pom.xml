@@ -17,7 +17,7 @@
         <packaging>jar</packaging>
         <jdk.version>17</jdk.version>
         <release.version>17</release.version>
-        <micronaut.version>4.6.2</micronaut.version>
+        <micronaut.version>4.6.3</micronaut.version>
         <micronaut.aot.enabled>false</micronaut.aot.enabled>
         <micronaut.aot.packageName>com.krickert.search.vectorizer.aot.generated</micronaut.aot.packageName>
         <micronaut.test.resources.enabled>true</micronaut.test.resources.enabled>
@@ -72,6 +72,10 @@
         <!-- Profile for x86_64 Linux -->
         <profile>
             <id>linux-x86_64</id>
+            <properties>
+                <arch-build>amd64</arch-build>
+                <jib.container.platforms>linux/amd64</jib.container.platforms>
+            </properties>
             <activation>
                 <property>
                     <name>osAndArch</name>
@@ -99,6 +103,10 @@
         <!-- Profile for arm64 Linux -->
         <profile>
             <id>linux-arm64</id>
+            <properties>
+                <arch-build>arm64</arch-build>
+                <jib.container.platforms>linux/arm64</jib.container.platforms>
+            </properties>
             <activation>
                 <property>
                     <name>osAndArch</name>
@@ -174,7 +182,20 @@
                 </dependency>
             </dependencies>
         </profile>
-
+        <profile>
+            <id>build-amd64</id>
+            <properties>
+                <jib.from.platforms>linux/amd64</jib.from.platforms>
+                <arch-build>amd64</arch-build>
+            </properties>
+        </profile>
+        <profile>
+            <id>build-arm64</id>
+            <properties>
+                <jib.from.platforms>linux/arm64</jib.from.platforms>
+                <arch-build>arm64</arch-build>
+            </properties>
+        </profile>
         <!-- Profile to print detected OS and architecture -->
         <profile>
             <id>print-os-arch</id>
@@ -340,44 +361,21 @@
             <version>${pytorch.version}-${pytorch.djl}</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-native-cpu</artifactId>
+            <classifier>osx-aarch64</classifier>
+            <version>${pytorch.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micronaut.reactor</groupId>
+            <artifactId>micronaut-reactor</artifactId>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>
-            <plugin>
-                <groupId>kr.motd.maven</groupId>
-                <artifactId>os-maven-plugin</artifactId>
-                <version>1.7.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>detect</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
-                <executions>
-                    <execution>
-                        <id>detect-os-arch</id>
-                        <goals>
-                            <goal>regex-property</goal>
-                        </goals>
-                        <configuration>
-                            <name>osAndArch</name>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <value>${os.detected.name}-${os.detected.arch}</value>
-                            <regex>
-                                (^osx-aarch_64)|(^linux-x86_64$)|(^linux-arm64$)|(^win-x86_64$)
-                            </regex>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <replacement>${os.detected.name}-${os.detected.arch}</replacement>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>io.micronaut.maven</groupId>
                 <artifactId>micronaut-maven-plugin</artifactId>
@@ -421,34 +419,22 @@
                     </compilerArgs>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
+                <version>3.4.3</version>
                 <configuration>
-                    <to>
-                        <image>docker.io/krickert/${project.name}:${project.version}</image>
-                        <auth>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <username>${env.DOCKER_USERNAME}</username>
-                            <!--suppress UnresolvedMavenProperty -->
-                            <password>${env.DOCKER_PASSWORD}</password>
-                        </auth>
-                    </to>
                     <from>
                         <image>eclipse-temurin:17</image>
-                        <platforms>
-                            <platform>
-                                 <architecture>amd64</architecture>
-                                 <os>linux</os>
-                            </platform>
-                            <platform>
-                                 <architecture>arm64</architecture>
-                                 <os>linux</os>
-                            </platform>
-                        </platforms>
                     </from>
+                    <to>
+                        <!-- We're not pushing to a repository here, just creating a tar -->
+                    </to>
                 </configuration>
             </plugin>
+
+
         </plugins>
     </build>
 </project>

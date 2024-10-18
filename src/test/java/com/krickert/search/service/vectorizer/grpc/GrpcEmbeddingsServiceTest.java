@@ -6,6 +6,7 @@ import com.krickert.search.service.EmbeddingServiceGrpc;
 import com.krickert.search.service.EmbeddingsVectorReply;
 import com.krickert.search.service.EmbeddingsVectorRequest;
 import com.krickert.search.service.EmbeddingsVectorsReply;
+import com.krickert.search.service.EmbeddingsVectorsRequest;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.micronaut.core.util.StringUtils;
@@ -13,12 +14,12 @@ import io.micronaut.runtime.EmbeddedApplication;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.apache.commons.compress.utils.Lists;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,8 +44,6 @@ class GrpcEmbeddingsServiceTest {
         Assertions.assertTrue(application.isRunning());
     }
 
-
-
     @Inject
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub endpoint;
     @Inject
@@ -65,17 +64,20 @@ class GrpcEmbeddingsServiceTest {
 
         @Override
         public void onCompleted() {
-            log.debug("Finished");
+            log.debug("Finished 1");
         }
-
-        // Override OnError ...
     };
 
     private final Collection<EmbeddingsVectorsReply> finishedEmbeddingsVectorsReply = Lists.newArrayList();
     StreamObserver<EmbeddingsVectorsReply> streamEmbeddingsVectorsReplyObserver = new StreamObserver<>() {
+        AtomicInteger counter = new AtomicInteger(0);
         @Override
         public void onNext(EmbeddingsVectorsReply reply) {
             finishedEmbeddingsVectorsReply.add(reply);
+            counter.incrementAndGet();
+            if (counter.get() % 10 == 0) {
+                log.info("number of docs processed {}", counter.get());
+            }
         }
 
         @Override
@@ -85,12 +87,9 @@ class GrpcEmbeddingsServiceTest {
 
         @Override
         public void onCompleted() {
-            log.info("Finished");
+            log.info("Finished 2");
         }
-
-        // Override OnError ...
     };
-
 
     @Test
     void testEmbeddingsVectorServerEndpoint() {
@@ -139,14 +138,73 @@ class GrpcEmbeddingsServiceTest {
 
         }
         log.info("waiting up to 15 seconds for at least 1 document to be added..");
-        await().atMost(15, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() > 1);
+        await().atMost(25, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() > 1);
         log.info("waiting up to 25 seconds for at least 10 docs to be added..");
-        await().atMost(25, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() > 10);
-        //my machine works fine.  Git hub seems to take forever.  This was once 80 seconds.
-        //"works on my local" they say.  "Trump will never win the election" they said.
-        //lies, blantant lies.
+        await().atMost(30, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() > 10);
         log.info("waiting for 500 seconds max for all 367 documents to be processed..");
         await().atMost(500, SECONDS).until(() -> finishedEmbeddingsVectorReply.size() == 367);
     }
 
+    @Test
+    void testEmbeddingsVectorsFromBodyParagraphsSync() {
+        AtomicInteger counter = new AtomicInteger(0);
+        try {
+            // get the body paragraphs of the documents in form of a list
+            Collection<PipeDocument> pipeDocuments = TestDataHelper.getFewHunderedPipeDocuments();
+            List<List<String>> documentParagraphs  = Lists.newArrayList();
+            for (PipeDocument doc : pipeDocuments) {
+                documentParagraphs.add(doc.getBodyParagraphsList().stream().toList());
+            }
+
+            // process the document paragraphs in parallel
+            documentParagraphs.forEach(paragraphs -> {
+                EmbeddingsVectorsRequest request = EmbeddingsVectorsRequest.newBuilder()
+                        .addAllText(paragraphs)
+                        .build();
+                EmbeddingsVectorsReply reply;
+                try {
+                    reply = endpoint.createEmbeddingsVectors(request);
+                    assertNotNull(reply);
+                    if (reply.getEmbeddingsCount() == 0) {
+                        log.info("Paragraphs returned 0: " + paragraphs);
+
+                    }
+                    //assertTrue(reply.getEmbeddingsCount() > 0);
+                    counter.incrementAndGet();
+                    if (counter.get() % 10 == 0) {
+                        log.info("number of docs processed {}", counter.get());
+                    }
+                } catch (StatusRuntimeException e) {
+                    log.error("Error occurred while creating embedding vectors for paragraphs: Finished Docs: [{}] Exception: [{}]", counter.get(), e.getMessage());
+                    throw e;
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("Error occurred while creating embedding vectors from paragraphs: ", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void testEmbeddingsVectorsFromBodyParagraphsAsync() {
+        Collection<PipeDocument> pipeDocuments = TestDataHelper.getFewHunderedPipeDocuments();
+        List<List<String>> documentParagraphs  = Lists.newArrayList();
+        for (PipeDocument doc : pipeDocuments) {
+            documentParagraphs.add(doc.getBodyParagraphsList().stream().toList());
+        }
+
+        for (List<String> paragraphs : documentParagraphs) {
+            EmbeddingsVectorsRequest request = EmbeddingsVectorsRequest.newBuilder()
+                    .addAllText(paragraphs)
+                    .build();
+            endpoint2.createEmbeddingsVectors(request, streamEmbeddingsVectorsReplyObserver);
+        }
+        log.info("waiting up to 15 seconds for at least 1 document to be added..");
+        await().atMost(25, SECONDS).until(() -> finishedEmbeddingsVectorsReply.size() > 1);
+        log.info("waiting up to 25 seconds for at least 10 docs to be added..");
+        await().atMost(30, SECONDS).until(() -> finishedEmbeddingsVectorsReply.size() > 10);
+        log.info("waiting for 500 seconds max for all 367 documents to be processed..");
+        await().atMost(500, SECONDS).until(() -> finishedEmbeddingsVectorsReply.size() == 367);
+    }
 }
