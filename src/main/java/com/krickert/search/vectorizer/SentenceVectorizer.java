@@ -10,6 +10,7 @@ import ai.djl.translate.TranslateException;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.core.io.ResourceLoader;
 import io.micronaut.core.util.StringUtils;
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.apache.commons.io.IOUtils;
@@ -208,5 +209,17 @@ public class SentenceVectorizer implements Vectorizer {
         }
 
         return targetFilePath.toUri().toURL();
+    }
+
+    /**
+     * Clean up all loaded models to avoid resource leaks.
+     */
+    @PreDestroy
+    public void close() {
+        modelRegistry.values().forEach(model -> {
+            model.close();
+            log.info("Model closed successfully: {}", model.getName());
+        });
+        modelRegistry.clear();
     }
 }
