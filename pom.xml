@@ -26,7 +26,7 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <pytorch.version>2.4.0</pytorch.version>
-        <pytorch.djl>0.30.0</pytorch.djl>
+        <pytorch.djl>0.31.1</pytorch.djl>
     </properties>
     <name>vectorizer</name>
     <description>Sentence embedding service</description>
